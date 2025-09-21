@@ -82,9 +82,38 @@ Frequencies outside these amateur radio bands are ignored.
 
 ## Building
 
+### Prerequisites
+
+- Go 1.21 or later
+- Git (for cloning the repository)
+
+### From Source
+
 ```bash
+# Clone the repository
+git clone https://github.com/kipz/fldigi-cmd.git
+cd fldigi-cmd
+
+# Build for your current platform
 go build -o fldigi-cmd .
+
+# Or build for specific platforms
+# Linux AMD64
+GOOS=linux GOARCH=amd64 go build -o fldigi-cmd-linux-amd64 .
+
+# Windows AMD64
+GOOS=windows GOARCH=amd64 go build -o fldigi-cmd-windows-amd64.exe .
+
+# macOS ARM64 (Apple Silicon)
+GOOS=darwin GOARCH=arm64 go build -o fldigi-cmd-darwin-arm64 .
+
+# macOS AMD64 (Intel)
+GOOS=darwin GOARCH=amd64 go build -o fldigi-cmd-darwin-amd64 .
 ```
+
+### Dependencies
+
+The project uses only Go standard library packages, so no external dependencies need to be downloaded.
 
 ## External Command
 
