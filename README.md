@@ -46,6 +46,30 @@ The tool maps frequencies to actual amateur radio band names:
 
 Frequencies outside these amateur radio bands are ignored.
 
+## Customizing Band Plan
+
+The band plan is defined in `bands.txt` and embedded into the binary at build time. To customize the frequency ranges:
+
+1. Edit `bands.txt` with your desired band definitions
+2. Rebuild the application: `go build -o fldigi-cmd .`
+
+### Band Plan Format
+
+The `bands.txt` file uses a simple format:
+```
+# Comments start with #
+band_name:start_freq_mhz:end_freq_mhz
+
+# Examples:
+40m:7.0:7.3
+20m:14.0:14.35
+```
+
+Each line defines a band with:
+- Band name (used as the argument passed to your external command)
+- Start frequency in MHz
+- End frequency in MHz
+
 ## Usage
 
 ```bash
@@ -114,6 +138,7 @@ GOOS=darwin GOARCH=amd64 go build -o fldigi-cmd-darwin-amd64 .
 ### Dependencies
 
 The project uses only Go standard library packages, so no external dependencies need to be downloaded.
+
 
 ## External Command
 

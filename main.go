@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	_ "embed"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -13,8 +15,58 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 )
+
+//go:embed bands.txt
+var bandPlanData string
+
+type BandRange struct {
+	Name     string
+	StartMHz float64
+	EndMHz   float64
+}
+
+var bandPlan []BandRange
+
+func init() {
+	loadBandPlan()
+}
+
+func loadBandPlan() {
+	scanner := bufio.NewScanner(strings.NewReader(bandPlanData))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip comments and empty lines
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// Parse band:start:end format
+		parts := strings.Split(line, ":")
+		if len(parts) != 3 {
+			continue
+		}
+
+		startMHz, err := strconv.ParseFloat(parts[1], 64)
+		if err != nil {
+			continue
+		}
+
+		endMHz, err := strconv.ParseFloat(parts[2], 64)
+		if err != nil {
+			continue
+		}
+
+		bandPlan = append(bandPlan, BandRange{
+			Name:     parts[0],
+			StartMHz: startMHz,
+			EndMHz:   endMHz,
+		})
+	}
+}
 
 type FldigiClient struct {
 	url    string
@@ -178,57 +230,14 @@ func (fc *FldigiClient) GetFrequency() (float64, error) {
 func frequencyToBand(freq float64) string {
 	freqMHz := freq / 1000000
 
-	// Map frequency to actual amateur radio bands
-	switch {
-	case freqMHz >= 0.1357 && freqMHz <= 0.1378: // 135.7-137.8 kHz
-		return "2200m"
-	case freqMHz >= 0.472 && freqMHz <= 0.479: // 472-479 kHz
-		return "630m"
-	case freqMHz >= 1.8 && freqMHz <= 2.0:
-		return "160m"
-	case freqMHz >= 3.5 && freqMHz <= 4.0:
-		return "80m"
-	case freqMHz >= 5.3305 && freqMHz <= 5.4035:
-		return "60m"
-	case freqMHz >= 7.0 && freqMHz <= 7.3:
-		return "40m"
-	case freqMHz >= 10.1 && freqMHz <= 10.15:
-		return "30m"
-	case freqMHz >= 14.0 && freqMHz <= 14.35:
-		return "20m"
-	case freqMHz >= 18.068 && freqMHz <= 18.168:
-		return "17m"
-	case freqMHz >= 21.0 && freqMHz <= 21.45:
-		return "15m"
-	case freqMHz >= 24.89 && freqMHz <= 24.99:
-		return "12m"
-	case freqMHz >= 28.0 && freqMHz <= 29.7:
-		return "10m"
-	case freqMHz >= 50.0 && freqMHz <= 54.0:
-		return "6m"
-	case freqMHz >= 144.0 && freqMHz <= 148.0:
-		return "2m"
-	case freqMHz >= 222.0 && freqMHz <= 225.0:
-		return "1.25m"
-	case freqMHz >= 420.0 && freqMHz <= 450.0:
-		return "70cm"
-	case freqMHz >= 902.0 && freqMHz <= 928.0:
-		return "33cm"
-	case freqMHz >= 1240.0 && freqMHz <= 1300.0:
-		return "23cm"
-	case freqMHz >= 2300.0 && freqMHz <= 2450.0:
-		return "13cm"
-	case freqMHz >= 3300.0 && freqMHz <= 3500.0:
-		return "9cm"
-	case freqMHz >= 5650.0 && freqMHz <= 5925.0:
-		return "5cm"
-	case freqMHz >= 10000.0 && freqMHz <= 10500.0:
-		return "3cm"
-	case freqMHz >= 24000.0 && freqMHz <= 24250.0:
-		return "1.2cm"
-	default:
-		return "unknown"
+	// Check each band in the loaded band plan
+	for _, band := range bandPlan {
+		if freqMHz >= band.StartMHz && freqMHz <= band.EndMHz {
+			return band.Name
+		}
 	}
+
+	return "unknown"
 }
 
 func runExternalCommand(command string, band string) error {
